@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Accord.Video.FFMPEG;
 using AForge.Video;
 using AForge.Video.DirectShow;
@@ -161,21 +162,25 @@ namespace VideoRecorder
             {
                 if (_recording)
                 {
-                    if (_firstFrameTime != null)
+                    using (var bitmap = (Bitmap) eventArgs.Frame.Clone())
                     {
-                        _writer.WriteVideoFrame(eventArgs.Frame, DateTime.Now - _firstFrameTime.Value);
-                    }
-                    else
-                    {
-                        _writer.WriteVideoFrame(eventArgs.Frame);
-                        _firstFrameTime = DateTime.Now;
+                        if (_firstFrameTime != null)
+                        {
+                            _writer.WriteVideoFrame(bitmap, DateTime.Now - _firstFrameTime.Value);
+                        }
+                        else
+                        {
+                            _writer.WriteVideoFrame(bitmap);
+                            _firstFrameTime = DateTime.Now;
+                        }
                     }
                 }
-                using (var bitmap = (Bitmap)eventArgs.Frame.Clone())
+                using (var bitmap = (Bitmap) eventArgs.Frame.Clone())
                 {
-                    Image = bitmap.ToBitmapImage();
+                    var bi = bitmap.ToBitmapImage();
+                    bi.Freeze();
+                    Dispatcher.CurrentDispatcher.Invoke(() => Image = bi);
                 }
-                Image.Freeze(); // avoid cross thread operations and prevents leaks
             }
             catch (Exception exc)
             {
@@ -194,7 +199,6 @@ namespace VideoRecorder
             }
             Image = null;
         }
-
 
         private void StopRecording()
         {
@@ -219,7 +223,6 @@ namespace VideoRecorder
             _writer.Open(dialog.FileName, (int)Math.Round(Image.Width, 0), (int)Math.Round(Image.Height, 0));
             _recording = true;
         }
-
 
         private void SaveSnapshot()
         {
