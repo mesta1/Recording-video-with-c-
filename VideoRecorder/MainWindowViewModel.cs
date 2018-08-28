@@ -194,7 +194,7 @@ namespace VideoRecorder
         {
             if (_videoSource != null && _videoSource.IsRunning)
             {
-                _videoSource.Stop();
+                _videoSource.SignalToStop();
                 _videoSource.NewFrame -= video_NewFrame;
             }
             Image = null;
@@ -246,7 +246,7 @@ namespace VideoRecorder
         {
             if (_videoSource != null && _videoSource.IsRunning)
             {
-                _videoSource.Stop();
+                _videoSource.SignalToStop();
             }
             _writer?.Dispose();
         }
